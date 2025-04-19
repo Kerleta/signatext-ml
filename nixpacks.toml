@@ -2,6 +2,7 @@
 nixPkgs = [
   "python310",
   "libglvnd",
+  "mesa",            # <— tambahkan ini
   "xorg.libSM",
   "xorg.libXext",
   "xorg.libX11",

@@ -1,15 +1,16 @@
 [phases.setup]
 nixPkgs = [
   "python310",
+  "git",
+  "ffmpeg",
+  "postgresql",
+  "mesa",            # ← ini yang menyediakan libGL.so.1
+  "mesa_drivers",    # ← driver GL agar mesa bisa bekerja
   "libglvnd",
-  "mesa",            # <— tambahkan ini
   "xorg.libSM",
   "xorg.libXext",
   "xorg.libX11",
-  "zlib",
-  "postgresql",
-  "git",
-  "ffmpeg"
+  "zlib"
 ]
 
 [phases.build]

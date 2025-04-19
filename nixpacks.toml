@@ -1,24 +1,31 @@
 [phases.setup]
 nixPkgs = [
-    "python310",
-    "libglvnd",
-    "xorg.libSM",
-    "xorg.libXext",
-    "xorg.libX11",    # Tambahan penting untuk OpenCV
-    "zlib",
-    "postgresql",
-    "git",
-    "ffmpeg"          # Diperlukan untuk video processing
+  "python310",
+  "libglvnd",
+  "xorg.libSM",
+  "xorg.libXext",
+  "xorg.libX11",
+  "zlib",
+  "postgresql",
+  "git",
+  "ffmpeg"
 ]
 
 [phases.build]
 commands = [
+  # 1) Clone YOLOv5 sekali depth=1 agar ringan
+  "git clone --depth 1 -b master https://github.com/Kerleta/yolov5.git yolov5",
+
+  # 2) Upgrade pip & tooling
   "pip install --upgrade pip setuptools wheel",
-  "pip install git+https://github.com/ultralytics/yolov5.git@master",
+
+  # 3) Install deps YOLOv5 (torch, scipy, etc.)
+  "pip install -r yolov5/requirements.txt",
+
+  # 4) Install deps aplikasi kamu (flask, cloudinary, psycopg2, ...)
   "pip install -r requirements.txt"
 ]
 
-
-
 [phases.start]
-command = "python file.py"
+# Tambahkan yolov5 ke PYTHONPATH agar `import yolov5.models.common` langsung ketemu
+command = "PYTHONPATH=./yolov5 python file.py"

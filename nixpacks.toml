@@ -13,11 +13,11 @@ nixPkgs = [
 
 [phases.build]
 commands = [
-    "git clone https://github.com/Kerleta/yolov5.git ./yolov5",
-    "cd yolov5 && git checkout master",  # Ganti dengan branch/commit valid
-    "cd yolov5 && pip install --upgrade 'setuptools<65.6.0' wheel && pip install -e .",
-    "pip install -r requirements.txt"
+  "pip install --upgrade pip setuptools wheel",
+  "pip install git+https://github.com/ultralytics/yolov5.git@master",
+  "pip install -r requirements.txt"
 ]
+
 
 
 [phases.start]

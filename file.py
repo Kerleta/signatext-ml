@@ -1,4 +1,6 @@
 import os
+import sys
+sys.path.append('/yolov5')
 import torch
 import cv2
 import cloudinary

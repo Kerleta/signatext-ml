@@ -1,3 +1,6 @@
 [project]
 name = "yolov5"
 license = "AGPL-3.0-or-later"
+
+[tool.setuptools]
+packages = ["yolov5", "models", "utils", "data", "segment", "classify"]

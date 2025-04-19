@@ -1,4 +1,4 @@
-numpy<2  # Wajib!
+numpy>=1.18.5,<2 # Wajib!
 opencv-python-headless==4.9.0.80  # Versi kompatibel dengan numpy<2
 torch>=2.0.0
 flask

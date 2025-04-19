@@ -1,9 +1,9 @@
 [phases.setup]
 nixPkgs = [
     "python310",
-    "libGL",
-    "libSM",
-    "libXext",
+    "libglvnd",
+    "xorg.libSM",
+    "xorg.libXext",
     "zlib",
     "postgresql"
 ]

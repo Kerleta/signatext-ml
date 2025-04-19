@@ -1,14 +1,9 @@
 [phases.setup]
 nixPkgs = [
     "python310",
-    "python310Packages.pip",
     "libGL",
-    "postgresql",
-    "zlib"
-]
-
-[phases.build]
-commands = [
-    "python3.10 -m venv --copies /opt/venv",
-    "/opt/venv/bin/pip install -r requirements.txt"
+    "libSM",
+    "libXext",
+    "zlib",
+    "postgresql"
 ]

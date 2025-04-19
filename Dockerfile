@@ -8,5 +8,5 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY . .
 
-# Use shell form to allow variable expansion
-CMD gunicorn --bind 0.0.0.0:${PORT:-5000} -k uvicorn.workers.UvicornWorker file:app
+# Use shell form for variable expansion
+CMD gunicorn --bind 0.0.0.0:${PORT:-5000} file:app

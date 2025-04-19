@@ -1,1 +1,1 @@
-web: /opt/venv/bin/python file.py
+web: file.py

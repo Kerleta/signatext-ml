@@ -7,3 +7,4 @@ pillow
 numpy
 requests
 psycopg2-binary
+git+https://github.com/ultralytics/yolov5.git

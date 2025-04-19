@@ -7,7 +7,7 @@ import cloudinary
 import cloudinary.uploader
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from yolov5.models.common import DetectMultiBackend
+from models.common import DetectMultiBackend
 from io import BytesIO
 from PIL import Image
 import numpy as np

@@ -13,14 +13,15 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Clone YOLOv5 dan install dependencies
+# Clone dan install YOLOv5 sebagai editable package
 RUN git clone https://github.com/ultralytics/yolov5.git && \
+    cd yolov5 && \
     pip install --upgrade pip && \
     pip install "numpy<2" && \
-    pip install -r yolov5/requirements.txt && \
-    pip install opencv-python-headless==4.9.0.80  # Versi kompatibel
+    pip install -r requirements.txt && \
+    pip install -e .  # Ini yang paling kritis!
 
-# Copy dan install app requirements
+# Install app requirements
 COPY . .
 RUN pip install -r requirements.txt
 

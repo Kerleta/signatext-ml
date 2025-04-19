@@ -19,17 +19,31 @@ import requests
 app = Flask(__name__)
 CORS(app)
 
-# Konfigurasi Cloudinary (aman, tidak ada default)
+# Konfigurasi Cloudinary
 cloudinary.config(
-    cloud_name=os.environ["CLOUDINARY_CLOUD_NAME"],
-    api_key=os.environ["CLOUDINARY_API_KEY"],
-    api_secret=os.environ["CLOUDINARY_API_SECRET"]
+    cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME", ""),
+    api_key=os.environ.get("CLOUDINARY_API_KEY", ""),
+    api_secret=os.environ.get("CLOUDINARY_API_SECRET", "")
 )
+
+# Logging untuk pengecekan startup
+print("🚀 Starting Signatext ML Backend...")
 
 # Load model YOLOv5
 device = os.getenv("YOLO_DEVICE", "cpu")
-model = DetectMultiBackend("bisindo_best.pt", device=device)
-names = model.names
+model_path = "bisindo_best.pt"
+
+if not os.path.exists(model_path):
+    print(f"❌ Model file not found: {model_path}")
+    sys.exit(1)
+
+try:
+    model = DetectMultiBackend(model_path, device=device)
+    names = model.names
+    print("✅ YOLOv5 model loaded successfully.")
+except Exception as e:
+    print(f"❌ Failed to load model: {e}")
+    sys.exit(1)
 
 def detect_frame(frame):
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -82,9 +96,13 @@ def download_from_url(url):
     else:
         return {"error": "Unsupported file type"}
 
+# Health check
+@app.route('/', methods=['GET'])
+def home():
+    return jsonify({'message': 'Signatext ML API is running ✅'})
+
 @app.route('/predict', methods=['POST'])
 def predict():
-    # Case 1: file upload
     if 'file' in request.files:
         file = request.files['file']
         data = file.read()
@@ -99,7 +117,6 @@ def predict():
 
         return jsonify({'detections': detections, 'media_url': media_url})
 
-    # Case 2: URL provided
     url = request.form.get('url')
     if url:
         result = download_from_url(url)
@@ -129,4 +146,6 @@ if __name__ == '__main__':
         else:
             print(json.dumps({"error": "Provide --image, --video, or --url"}, indent=2))
     else:
-        app.run(host='0.0.0.0', port=int(os.getenv("PORT", 5000)))
+        port = int(os.getenv("PORT", 5000))
+        print(f"🌐 Running server on port {port}")
+        app.run(host='0.0.0.0', port=port)

@@ -7,12 +7,14 @@ nixPkgs = [
   "mesa",
   "mesa.drivers",
   "libglvnd",
-  "libGL",             
-  "xorg.libSM",
-  "xorg.libXext",
+  "libGL",
+  "libGLU",              
   "xorg.libX11",
+  "xorg.libXext",
+  "xorg.libSM",
   "zlib"
 ]
+
 environment = { PIP_NO_CACHE_DIR = "false", PIP_CACHE_DIR = "/tmp/pip-cache" }
 
 [phases.build]

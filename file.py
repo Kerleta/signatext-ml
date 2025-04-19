@@ -1,11 +1,23 @@
 import os
 import sys
 
+
 # Add yolov5 to Python path if not already there
 current_dir = os.path.dirname(os.path.abspath(__file__))
 yolo_dir = os.path.join(current_dir, "yolov5")
 if yolo_dir not in sys.path:
     sys.path.insert(0, yolo_dir)
+    sys.path.insert(0, os.getcwd())  # Tambahkan juga direktori kerja saat ini
+    print(f"Added {yolo_dir} and {os.getcwd()} to sys.path")
+
+
+# Add yolov5 to Python path if not already there
+current_dir = os.path.dirname(os.path.abspath(__file__))
+yolo_dir = os.path.join(current_dir, "yolov5")
+if yolo_dir not in sys.path:
+    sys.path.insert(0, yolo_dir)
+    sys.path.insert(0, os.getcwd())  # Tambahkan juga direktori kerja saat ini
+    print(f"Added {yolo_dir} and {os.getcwd()} to sys.path")
 
 import torch
 os.environ["OPENCV_OPENGL_RUNTIME"] = "none"
@@ -16,9 +28,20 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 try:
     from yolov5.models.common import DetectMultiBackend
-except ImportError:
-    print("Error importing yolov5. Current sys.path:", sys.path)
-    raise
+    print("Successfully imported DetectMultiBackend from yolov5.models.common")
+except ImportError as e:
+    print(f"Error importing yolov5: {e}")
+    print("Current sys.path:", sys.path)
+    
+    # Coba import alternatif
+    try:
+        import yolov5
+        print(f"YOLOv5 package found at: {yolov5.__file__}")
+        from yolov5.models.common import DetectMultiBackend
+        print("Alternative import successful")
+    except ImportError as e:
+        print(f"Alternative import also failed: {e}")
+        raise
 from io import BytesIO
 from PIL import Image
 import numpy as np

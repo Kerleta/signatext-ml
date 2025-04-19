@@ -23,10 +23,10 @@ commands = [
   "git clone --depth 1 -b master https://github.com/Kerleta/yolov5.git yolov5",
   "pip install --upgrade pip setuptools wheel",
   "pip uninstall -y opencv-python opencv-python-headless",
-  "pip install opencv-python-headless==4.9.0.80",
-  "pip install -r yolov5/requirements.txt",
-  "pip install -r requirements.txt"
+  "pip install opencv-python-headless==4.7.0.72",
+  "pip install -r requirements.txt",
+  "pip install -r yolov5/requirements.txt"
 ]
 
 [phases.start]
-command = "PYTHONPATH=./yolov5 python file.py"
+command = "gunicorn --bind 0.0.0.0:${PORT:-5000} file:app"

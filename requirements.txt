@@ -1,9 +1,9 @@
-torch
-opencv-python-headless==4.9.0.80
+numpy<2  # Wajib!
+opencv-python-headless==4.9.0.80  # Versi kompatibel dengan numpy<2
+torch>=2.0.0
 flask
 flask-cors
 cloudinary
 pillow
-numpy
 requests
 psycopg2-binary

@@ -1,5 +1,5 @@
-numpy>=1.18.5,<2 # Wajib!
-opencv-python-headless==4.9.0.80  # Versi kompatibel dengan numpy<2
+numpy>=1.18.5,<2
+opencv-python-headless==4.9.0.80
 torch>=2.0.0
 flask
 flask-cors
@@ -7,3 +7,4 @@ cloudinary
 pillow
 requests
 psycopg2-binary
+git+https://github.com/ultralytics/yolov5.git@master 

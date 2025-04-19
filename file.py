@@ -40,7 +40,8 @@ conn = psycopg2.connect(
 )
 cursor = conn.cursor()
 
-# Load model YOLOv5\ nmodel = DetectMultiBackend("bisindo_best.pt", device=device)
+# Load model YOLOv5
+model = DetectMultiBackend("bisindo_best.pt", device=device)
 names = model.names
 
 def detect_frame(frame):

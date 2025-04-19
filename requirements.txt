@@ -7,4 +7,3 @@ cloudinary
 pillow
 requests
 psycopg2-binary
-git+https://github.com/ultralytics/yolov5.git@master#egg=yolov5&subdirectory=yolov5

@@ -1,11 +1,14 @@
+[variables]
+cache.clear = "true"
+
 [phases.setup]
 nixPkgs = [
   "python310",
   "git",
   "ffmpeg",
   "postgresql",
-  "mesa",           # menyediakan libGL.so.1
-  "mesa.drivers",   # driver OpenGL
+  "mesa",
+  "mesa.drivers",
   "libglvnd",
   "xorg.libSM",
   "xorg.libXext",
@@ -17,15 +20,9 @@ nixPkgs = [
 commands = [
   "git clone --depth 1 -b master https://github.com/Kerleta/yolov5.git yolov5",
   "pip install --upgrade pip setuptools wheel",
-
-  # 1) Install deps YOLOv5 (termasuk opencv-python)
   "pip install -r yolov5/requirements.txt",
-
-  # 2) Ganti gui‑OpenCV dengan headless
   "pip uninstall -y opencv-python",
   "pip install opencv-python-headless",
-
-  # 3) Install deps aplikasi
   "pip install -r requirements.txt"
 ]
 

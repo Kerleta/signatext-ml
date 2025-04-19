@@ -1,5 +1,12 @@
 import os
 import sys
+
+# Add yolov5 to Python path if not already there
+current_dir = os.path.dirname(os.path.abspath(__file__))
+yolo_dir = os.path.join(current_dir, "yolov5")
+if yolo_dir not in sys.path:
+    sys.path.insert(0, yolo_dir)
+
 import torch
 os.environ["OPENCV_OPENGL_RUNTIME"] = "none"
 import cv2
@@ -7,7 +14,11 @@ import cloudinary
 import cloudinary.uploader
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from yolov5.models.common import DetectMultiBackend
+try:
+    from yolov5.models.common import DetectMultiBackend
+except ImportError:
+    print("Error importing yolov5. Current sys.path:", sys.path)
+    raise
 from io import BytesIO
 from PIL import Image
 import numpy as np
@@ -28,6 +39,12 @@ cloudinary.config(
 
 # Logging untuk pengecekan startup
 print("🚀 Starting Signatext ML Backend...")
+print(f"Current working directory: {os.getcwd()}")
+print(f"Files in current directory: {os.listdir('.')}")
+if os.path.exists('yolov5'):
+    print(f"Files in yolov5 directory: {os.listdir('yolov5')}")
+else:
+    print("yolov5 directory not found!")
 
 # Load model YOLOv5
 device = os.getenv("YOLO_DEVICE", "cpu")
@@ -35,6 +52,8 @@ model_path = "bisindo_best.pt"
 
 if not os.path.exists(model_path):
     print(f"❌ Model file not found: {model_path}")
+    print(f"Current directory: {os.getcwd()}")
+    print(f"Files in current directory: {os.listdir('.')}")
     sys.exit(1)
 
 try:

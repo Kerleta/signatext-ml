@@ -13,14 +13,14 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Clone YOLOv5 dan install dengan numpy versi lama
+# Clone YOLOv5 dan install dependencies
 RUN git clone https://github.com/ultralytics/yolov5.git && \
     pip install --upgrade pip && \
-    pip install "numpy<2" && \  # Pastikan numpy 1.x terinstall dulu
+    pip install "numpy<2" && \
     pip install -r yolov5/requirements.txt && \
-    pip install opencv-python-headless==4.9.0.80  # Force install versi kompatibel
+    pip install opencv-python-headless==4.9.0.80  # Versi kompatibel
 
-# Copy dan install requirements aplikasi
+# Copy dan install app requirements
 COPY . .
 RUN pip install -r requirements.txt
 

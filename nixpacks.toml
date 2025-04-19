@@ -13,13 +13,10 @@ nixPkgs = [
 
 [phases.build]
 commands = [
-    # Clone YOLOv5 ke direktori project
-    "git clone https://github.com/ultralytics/yolov5.git ./yolov5",
-    
-    # Install YOLOv5 dengan setuptools versi compatible
+    # Gunakan fork Anda
+    "git clone https://github.com/Kerleta/yolov5.git ./yolov5",
+    "cd yolov5 && git checkout <BRANCH/COMMIT>",
     "cd yolov5 && pip install --upgrade 'setuptools<65.6.0' wheel && pip install -e .",
-    
-    # Install requirements aplikasi
     "pip install -r requirements.txt"
 ]
 

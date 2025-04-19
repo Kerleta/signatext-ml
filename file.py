@@ -6,7 +6,6 @@ import cloudinary.uploader
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from models.common import DetectMultiBackend
-import psycopg2
 from io import BytesIO
 from PIL import Image
 import numpy as np
@@ -18,29 +17,15 @@ import requests
 app = Flask(__name__)
 CORS(app)
 
-# Konfigurasi Cloudinary
-device = os.getenv("YOLO_DEVICE", "cpu")
+# Konfigurasi Cloudinary (aman, tidak ada default)
 cloudinary.config(
-    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME", "dljflfis5"),
-    api_key=os.getenv("CLOUDINARY_API_KEY", "688273164556944"),
-    api_secret=os.getenv("CLOUDINARY_API_SECRET", "qiak8-mntievgXgTH6XUPg5b0S0")
+    cloud_name=os.environ["CLOUDINARY_CLOUD_NAME"],
+    api_key=os.environ["CLOUDINARY_API_KEY"],
+    api_secret=os.environ["CLOUDINARY_API_SECRET"]
 )
-
-# Konfigurasi database PostgreSQL
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_NAME = os.getenv("DB_NAME", "signatext")
-DB_USER = os.getenv("DB_USER", "postgres")
-DB_PASS = os.getenv("DB_PASS", "password")
-
-conn = psycopg2.connect(
-    host=DB_HOST,
-    database=DB_NAME,
-    user=DB_USER,
-    password=DB_PASS
-)
-cursor = conn.cursor()
 
 # Load model YOLOv5
+device = os.getenv("YOLO_DEVICE", "cpu")
 model = DetectMultiBackend("bisindo_best.pt", device=device)
 names = model.names
 
@@ -73,7 +58,7 @@ def predict_video(path, frame_skip=10):
             break
         frame_id += 1
         if frame_id % frame_skip == 0:
-            results.append({ 'frame': frame_id, 'detections': detect_frame(frame) })
+            results.append({'frame': frame_id, 'detections': detect_frame(frame)})
     cap.release()
     return {"file": path, "video_detections": results}
 
@@ -97,9 +82,6 @@ def download_from_url(url):
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    user_id = request.form.get('user_id', type=int)
-    session_id = request.form.get('session_id')
-
     # Case 1: file upload
     if 'file' in request.files:
         file = request.files['file']
@@ -108,21 +90,12 @@ def predict():
         frame = cv2.imdecode(arr, cv2.IMREAD_COLOR)
 
         detections = detect_frame(frame)
-        saved = []
-        if user_id:
-            for det in detections:
-                cursor.execute(
-                    "INSERT INTO letters (user_id, session_id, letter, accuracy) VALUES (%s, %s, %s, %s) RETURNING id",
-                    (user_id, session_id, det['label'], det['confidence']*100)
-                )
-                saved.append(cursor.fetchone()[0])
-            conn.commit()
 
         upload = BytesIO(data)
         res = cloudinary.uploader.upload(upload)
         media_url = res.get('secure_url')
 
-        return jsonify({ 'detections': detections, 'saved_ids': saved, 'media_url': media_url })
+        return jsonify({'detections': detections, 'media_url': media_url})
 
     # Case 2: URL provided
     url = request.form.get('url')
@@ -130,31 +103,20 @@ def predict():
         result = download_from_url(url)
         detections = result.get('detections') or result.get('video_detections', [])
 
-        saved = []
-        if user_id:
-            for det in detections:
-                cursor.execute(
-                    "INSERT INTO letters (user_id, session_id, letter, accuracy) VALUES (%s, %s, %s, %s) RETURNING id",
-                    (user_id, session_id, det['label'], det.get('confidence',0)*100)
-                )
-                saved.append(cursor.fetchone()[0])
-            conn.commit()
-
-        # Upload URL to Cloudinary
         res = cloudinary.uploader.upload(url, resource_type='video')
         media_url = res.get('secure_url')
 
-        return jsonify({ 'detections': detections, 'saved_ids': saved, 'media_url': media_url })
+        return jsonify({'detections': detections, 'media_url': media_url})
 
     return jsonify({'error': 'No file or url provided'}), 400
 
 if __name__ == '__main__':
-    p = argparse.ArgumentParser(description="YOLOv5 BISINDO Service")
-    p.add_argument('--image', type=str)
-    p.add_argument('--video', type=str)
-    p.add_argument('--url', type=str)
-    p.add_argument('--cli', action='store_true')
-    args = p.parse_args()
+    parser = argparse.ArgumentParser(description="YOLOv5 BISINDO Service")
+    parser.add_argument('--image', type=str)
+    parser.add_argument('--video', type=str)
+    parser.add_argument('--url', type=str)
+    parser.add_argument('--cli', action='store_true')
+    args = parser.parse_args()
     if args.cli:
         if args.image:
             print(json.dumps(predict_image(args.image), indent=2))
@@ -163,6 +125,6 @@ if __name__ == '__main__':
         elif args.url:
             print(json.dumps(download_from_url(args.url), indent=2))
         else:
-            print(json.dumps({"error":"Provide --image, --video, or --url"}, indent=2))
+            print(json.dumps({"error": "Provide --image, --video, or --url"}, indent=2))
     else:
-        app.run(host='0.0.0.0', port=int(os.getenv("PORT",5000)))
+        app.run(host='0.0.0.0', port=int(os.getenv("PORT", 5000)))

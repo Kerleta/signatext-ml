@@ -15,18 +15,20 @@ nixPkgs = [
 
 [phases.build]
 commands = [
-  # 1) Clone YOLOv5 sekali depth=1 agar ringan
   "git clone --depth 1 -b master https://github.com/Kerleta/yolov5.git yolov5",
-
-  # 2) Upgrade pip & tooling
   "pip install --upgrade pip setuptools wheel",
 
-  # 3) Install deps YOLOv5 (torch, scipy, etc.)
+  # 1) Install deps YOLOv5 (termasuk opencv-python)
   "pip install -r yolov5/requirements.txt",
 
-  # 4) Install deps aplikasi kamu (flask, cloudinary, psycopg2, ...)
+  # 2) Ganti gui‑OpenCV dengan headless
+  "pip uninstall -y opencv-python",
+  "pip install opencv-python-headless",
+
+  # 3) Install deps aplikasi (yang sudah include opencv-python-headless)
   "pip install -r requirements.txt"
 ]
+
 
 [phases.start]
 # Tambahkan yolov5 ke PYTHONPATH agar `import yolov5.models.common` langsung ketemu

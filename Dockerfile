@@ -1,6 +1,6 @@
 FROM python:3.10-slim
 
-# Install dependencies (incl. libGL for OpenCV)
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
     ffmpeg \
@@ -9,19 +9,19 @@ RUN apt-get update && apt-get install -y \
     libxrender-dev \
     libgl1-mesa-glx \
     libglib2.0-0 \
-    && apt-get clean
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Set workdir
 WORKDIR /app
 
-# Copy all files
-COPY . .
-
-# Clone YOLOv5 (atau bisa copy lokal kalau udah dimasukin repo)
+# Clone YOLOv5 dan install dengan numpy versi lama
 RUN git clone https://github.com/ultralytics/yolov5.git && \
     pip install --upgrade pip && \
+    pip install "numpy<2" && \  # Pastikan numpy 1.x terinstall dulu
     pip install -r yolov5/requirements.txt && \
-    pip install -r requirements.txt
+    pip install opencv-python-headless==4.9.0.80  # Force install versi kompatibel
 
-# Run your app
+# Copy dan install requirements aplikasi
+COPY . .
+RUN pip install -r requirements.txt
+
 CMD ["python", "file.py"]

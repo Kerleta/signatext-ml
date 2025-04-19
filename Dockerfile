@@ -8,5 +8,4 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY . .
 
-# Use shell form for variable expansion
 CMD gunicorn --bind 0.0.0.0:${PORT:-5000} file:app

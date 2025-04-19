@@ -1,10 +1,17 @@
 [phases.setup]
 nixPkgs = [
     "python310",
-    "libglvnd",        # Replaces libGL
-    "xorg.libSM",      # Correct Xorg package
-    "xorg.libXext",    # Correct Xorg package
+    "libglvnd",
+    "xorg.libSM",
+    "xorg.libXext",
     "zlib",
     "postgresql",
-    "ffmpeg"           # Often needed for OpenCV video processing
+    "git"  # Untuk clone YOLOv5
+]
+
+[phases.build]
+commands = [
+    "git clone https://github.com/ultralytics/yolov5.git /yolov5",
+    "cd /yolov5 && pip install --upgrade 'setuptools<65.6.0' wheel && pip install -e .",
+    "pip install -r requirements.txt"
 ]

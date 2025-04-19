@@ -4,8 +4,8 @@ nixPkgs = [
   "git",
   "ffmpeg",
   "postgresql",
-  "mesa",            # ← ini yang menyediakan libGL.so.1
-  "mesa_drivers",    # ← driver GL agar mesa bisa bekerja
+  "mesa",           # menyediakan libGL.so.1
+  "mesa.drivers",   # driver OpenGL
   "libglvnd",
   "xorg.libSM",
   "xorg.libXext",
@@ -25,11 +25,9 @@ commands = [
   "pip uninstall -y opencv-python",
   "pip install opencv-python-headless",
 
-  # 3) Install deps aplikasi (yang sudah include opencv-python-headless)
+  # 3) Install deps aplikasi
   "pip install -r requirements.txt"
 ]
 
-
 [phases.start]
-# Tambahkan yolov5 ke PYTHONPATH agar `import yolov5.models.common` langsung ketemu
 command = "PYTHONPATH=./yolov5 python file.py"

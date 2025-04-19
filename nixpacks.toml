@@ -1,9 +1,10 @@
 [phases.setup]
 nixPkgs = [
     "python310",
-    "libglvnd",
-    "xorg.libSM",
-    "xorg.libXext",
+    "libglvnd",        # Replaces libGL
+    "xorg.libSM",      # Correct Xorg package
+    "xorg.libXext",    # Correct Xorg package
     "zlib",
-    "postgresql"
+    "postgresql",
+    "ffmpeg"           # Often needed for OpenCV video processing
 ]

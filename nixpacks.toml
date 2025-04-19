@@ -15,7 +15,7 @@ nixPkgs = [
   "zlib"
 ]
 
-environment = { PIP_NO_CACHE_DIR = "false", PIP_CACHE_DIR = "/tmp/pip-cache", PYTHONPATH = "./:./yolov5" }
+environment = { PIP_NO_CACHE_DIR = "false", PIP_CACHE_DIR = "/tmp/pip-cache", PYTHONPATH = "$PYTHONPATH:./:./yolov5" }
 
 [phases.build]
 commands = [
@@ -24,9 +24,11 @@ commands = [
   "pip install --upgrade pip setuptools wheel",
   "pip uninstall -y opencv-python opencv-python-headless",
   "pip install opencv-python-headless==4.7.0.72",
+  "pip install cloudinary==1.33.0",
+  "pip install flask==2.0.1 werkzeug==2.0.3 flask-cors==3.0.10",
   "pip install -r requirements.txt",
-  "pip install -e ./yolov5"
+  "cd yolov5 && pip install -e ."
 ]
 
 [phases.start]
-command = "PYTHONPATH=$PYTHONPATH:./yolov5 gunicorn --bind 0.0.0.0:${PORT:-5000} file:app"
+command = "PYTHONPATH=$PYTHONPATH:./yolov5 python file.py"

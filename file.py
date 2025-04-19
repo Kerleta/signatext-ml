@@ -1,6 +1,7 @@
 import os
 import sys
 import torch
+os.environ["OPENCV_OPENGL_RUNTIME"] = "none"
 import cv2
 import cloudinary
 import cloudinary.uploader

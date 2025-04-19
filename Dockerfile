@@ -1,27 +1,21 @@
 FROM python:3.10-slim
+WORKDIR /app
 
 # 1) System deps
 RUN apt-get update && apt-get install -y \
-    git \
-    ffmpeg \
-    libsm6 \
-    libxext6 \
-    libxrender-dev \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
+     git ffmpeg libsm6 libxext6 libxrender-dev libgl1-mesa-glx libglib2.0-0 \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# 2) Clone & install YOLOv5 as an editable package
-RUN git clone https://github.com/ultralytics/yolov5.git /opt/yolov5
-RUN pip install --upgrade pip \
-  && pip install --no-cache-dir -r /opt/yolov5/requirements.txt \
-  && pip install --no-cache-dir -e /opt/yolov5
+# 2) Copy everything (your code + vendored yolov5)
+COPY . .
 
-# 3) Install your own app requirements
-WORKDIR /app
-COPY requirements.txt .
+# 3) Install YOLOv5 in editable mode
+RUN pip install --upgrade pip \
+ && pip install --no-cache-dir -r yolov5/requirements.txt \
+ && pip install --no-cache-dir -e yolov5
+
+# 4) Install your app’s Python deps
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 4) Copy your code and run
-COPY . .
+# 5) Launch
 CMD ["python", "file.py"]

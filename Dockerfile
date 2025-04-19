@@ -8,4 +8,5 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY . .
 
-CMD ["gunicorn", "--bind", "0.0.0.0:$PORT", "-k", "uvicorn.workers.UvicornWorker", "your_fastapi_app:app"]
+# Use shell form to allow variable expansion
+CMD gunicorn --bind 0.0.0.0:${PORT:-5000} -k uvicorn.workers.UvicornWorker file:app

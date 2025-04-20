@@ -37,6 +37,7 @@ if not os.path.isfile(MODEL_PATH):
 
 DEVICE = os.getenv("YOLO_DEVICE", "cpu")
 model = torch.hub.load('ultralytics/yolov5', 'custom', path=MODEL_PATH, force_reload=False)
+print(f"✅ Loaded model with {len(model.names)} classes: {model.names}")
 model.to(DEVICE)
 model.conf = 0.1  # Set default confidence threshold
 names = model.names

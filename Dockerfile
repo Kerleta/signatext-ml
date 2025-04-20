@@ -22,4 +22,5 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 COPY . .
 
 # Jalankan aplikasi menggunakan Gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app.file:app"]
+# Ganti baris paling bawah
+CMD ["python", "app/file.py"]

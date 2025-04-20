@@ -1,1 +1,1 @@
-web: gunicorn --bind "0.0.0.0:${PORT:-5000}" file:app
+web: gunicorn --bind "0.0.0.0:${PORT:-5000}" app.file:app

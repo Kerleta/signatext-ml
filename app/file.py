@@ -41,21 +41,37 @@ model.to(DEVICE)
 names = model.names
 
 # ——————————————————————————————
-# Utility: deteksi dan gambar kotak
+# Utility: deteksi dan gambar kotak (dengan threshold rendah + resize)
 # ——————————————————————————————
-def detect_and_annotate(frame: np.ndarray):
-    # deteksi
-    results = model(frame)
-    dets = results.xyxy[0].cpu().numpy()  # [x1,y1,x2,y2,conf,cls] per det
+def detect_and_annotate(frame: np.ndarray, conf_thresh=0.1, target_w=320):
+    # resize frame
+    h, w = frame.shape[:2]
+    new_h = int(h * target_w / w)
+    small = cv2.resize(frame, (target_w, new_h))
+    # inference dengan threshold lebih rendah
+    results = model(small, conf=conf_thresh)
+    dets = results.xyxy[0].cpu().numpy()  # [x1,y1,x2,y2,conf,cls]
     output = []
-    for x1,y1,x2,y2,conf,cls in dets:
-        x1,y1,x2,y2 = map(int, (x1,y1,x2,y2))
+    # map kotak dari small->original coords
+    scale_x = w / target_w
+    scale_y = h / new_h
+
+    for x1, y1, x2, y2, conf, cls in dets:
+        # skala kembali ke original
+        x1o = int(x1 * scale_x)
+        y1o = int(y1 * scale_y)
+        x2o = int(x2 * scale_x)
+        y2o = int(y2 * scale_y)
         label = names[int(cls)]
-        output.append({"label": label, "confidence": float(conf), "bbox": [x1,y1,x2,y2]})
-        # gambar kotak & label
-        cv2.rectangle(frame, (x1,y1), (x2,y2), (0,255,0), 2)
+        output.append({
+            "label": label,
+            "confidence": float(conf),
+            "bbox": [x1o, y1o, x2o, y2o]
+        })
+        # gambar kotak & label di frame asli
+        cv2.rectangle(frame, (x1o, y1o), (x2o, y2o), (0,255,0), 2)
         cv2.putText(frame, f"{label} {conf:.2f}",
-                    (x1, y1-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1)
+                    (x1o, y1o-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1)
     return output, frame
 
 # ——————————————————————————————
@@ -67,7 +83,7 @@ def home():
 
 @app.route("/predict", methods=["POST"])
 def predict():
-    # — file upload
+    # pilih input
     if "file" in request.files:
         data = request.files["file"].read()
         arr  = np.frombuffer(data, np.uint8)
@@ -75,7 +91,6 @@ def predict():
         if frame is None:
             return jsonify({"error": "Invalid image data"}), 400
 
-    # — URL upload
     elif (url := request.form.get("url")):
         resp = requests.get(url, timeout=5)
         if "image" not in resp.headers.get("Content-Type",""):
@@ -86,19 +101,19 @@ def predict():
     else:
         return jsonify({"error": "No file or url provided"}), 400
 
-    # deteksi + annotate
+    # deteksi & annotate
     detections, annotated = detect_and_annotate(frame)
 
-    # encode annotated image ke JPEG
-    success, jpg = cv2.imencode(".jpg", annotated)
-    if not success:
+    # encode annotated ke JPEG
+    ok, jpg = cv2.imencode(".jpg", annotated)
+    if not ok:
         return jsonify({"error": "Failed to encode image"}), 500
     annotated_bytes = jpg.tobytes()
 
-    # upload annotated image ke Cloudinary
+    # upload hasil ke Cloudinary
     res = cloudinary.uploader.upload(
         BytesIO(annotated_bytes),
-        folder="signatext",               # opsional folder
+        folder="signatext",       # opsional
         resource_type="image"
     )
 
@@ -124,8 +139,10 @@ def predict_video():
         ret, frame = cap.read()
         if not ret:
             break
-        dets, _ = detect_and_annotate(frame)
-        frames.append({"frame": idx, "detections": dets})
+        # hanya tiap 5 frame (optional)
+        if idx % 5 == 0:
+            dets, _ = detect_and_annotate(frame)
+            frames.append({"frame": idx, "detections": dets})
         idx += 1
     cap.release()
 

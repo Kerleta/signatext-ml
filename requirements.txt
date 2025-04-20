@@ -1,5 +1,6 @@
 Flask==3.0.3
 Flask-Cors==3.0.10
+pandas
 gunicorn==21.2.0
 torch==2.0.0
 torchvision==0.15.1

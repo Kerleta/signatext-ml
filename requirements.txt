@@ -1,5 +1,4 @@
 Flask>=2.2.0
-Werkzeug<2.1.0
 Flask-Cors==3.0.10
 gunicorn==21.2.0
 torch==2.0.0

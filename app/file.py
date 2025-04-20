@@ -73,4 +73,5 @@ def detect_and_annotate(frame: np.ndarray, target_w=320):
 
         cv2.rectangle(frame, (x1o, y1o), (x2o, y2o), (0, 255, 0), 2)
         cv2.putText(frame, f"{label} {conf:.2f}", (x1o, y1o - 5),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0
+            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+

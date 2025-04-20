@@ -44,34 +44,43 @@ names = model.names
 # Utility: deteksi dan gambar kotak (dengan threshold rendah + resize)
 # ——————————————————————————————
 def detect_and_annotate(frame: np.ndarray, conf_thresh=0.1, target_w=320):
-    # resize frame
+    # Resize frame
     h, w = frame.shape[:2]
     new_h = int(h * target_w / w)
     small = cv2.resize(frame, (target_w, new_h))
-    # inference dengan threshold lebih rendah
-    results = model(small, conf=conf_thresh)
-    dets = results.xyxy[0].cpu().numpy()  # [x1,y1,x2,y2,conf,cls]
+
+    # Inference tanpa keyword arg
+    results = model(small)  # AutoShape
+
+    # Ambil numpy array [x1,y1,x2,y2,conf,cls]
+    dets = results.xyxy[0].cpu().numpy()
+
     output = []
-    # map kotak dari small->original coords
     scale_x = w / target_w
     scale_y = h / new_h
 
+    # Filter manual berdasarkan confidence threshold
     for x1, y1, x2, y2, conf, cls in dets:
-        # skala kembali ke original
+        if conf < conf_thresh:
+            continue
+        # Skala kotak ke ukuran asli
         x1o = int(x1 * scale_x)
         y1o = int(y1 * scale_y)
         x2o = int(x2 * scale_x)
         y2o = int(y2 * scale_y)
+
         label = names[int(cls)]
         output.append({
             "label": label,
             "confidence": float(conf),
             "bbox": [x1o, y1o, x2o, y2o]
         })
-        # gambar kotak & label di frame asli
+
+        # Gambar kotak & label
         cv2.rectangle(frame, (x1o, y1o), (x2o, y2o), (0,255,0), 2)
         cv2.putText(frame, f"{label} {conf:.2f}",
                     (x1o, y1o-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1)
+
     return output, frame
 
 # ——————————————————————————————

@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Clone YOLOv5 repository dan hapus dependency torch
-RUN git clone https://github.com/ultralytics/yolov5 /yolov5 && \
+RUN git clone --branch v6.0 https://github.com/ultralytics/yolov5 /yolov5 && \
     sed -i '/^torch/d' /yolov5/requirements.txt && \
     sed -i '/^torchvision/d' /yolov5/requirements.txt
 

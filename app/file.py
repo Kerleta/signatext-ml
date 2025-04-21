@@ -1,176 +1,143 @@
 import os
 import sys
 import time
+import pathlib
+import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import torch
 import cv2
 import numpy as np
 import requests
-import logging
+import torch
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, 
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger('app.file')
+# Fix untuk Windows loading model
+if sys.platform == "win32":
+    pathlib.PosixPath = pathlib.WindowsPath
 
-# ——————————————————————————————
-# Inisialisasi Flask & CORS
-# ——————————————————————————————
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger('railway.app')
+
+# Inisialisasi Flask
 app = Flask(__name__)
 CORS(app)
 
-# ——————————————————————————————
-# Load YOLOv5 model
-# ——————————————————————————————
-ROOT_DIR   = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-MODEL_PATH = os.path.join(ROOT_DIR, "bisindo_best.pt")
+# Path model
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
+MODEL_PATH = os.path.join(ROOT_DIR, "model", "bisindo_best.pt")  # Pastikan struktur folder benar
+
+# Validasi model
 if not os.path.isfile(MODEL_PATH):
-    logger.error(f"❌ Model not found at {MODEL_PATH}")
+    logger.critical(f"Model tidak ditemukan di {MODEL_PATH}")
     sys.exit(1)
 
-DEVICE = os.getenv("YOLO_DEVICE", "cpu")
-logger.info(f"Loading YOLOv5 model from {MODEL_PATH} on {DEVICE}...")
-
+# Load model
 try:
-    # Load YOLOv5 model
-    model = torch.hub.load('ultralytics/yolov5', 'custom', path=MODEL_PATH, force_reload=False)
-    model.to(DEVICE)
-
-    # Precision handling
-    if DEVICE == 'cuda':
-        model.half()  # Gunakan half precision jika GPU
-    else:
-        model.float()  # Paksa ke float32 jika CPU
-
-    # Threshold dan setting lain
-    model.conf = float(os.getenv("YOLO_CONF", "0.1"))  # Lower threshold
-    model.iou = float(os.getenv("YOLO_IOU", "0.45"))   # NMS IOU threshold
-    model.max_det = int(os.getenv("YOLO_MAX_DET", "100"))  # Maximum detections
-
+    from models.common import DetectMultiBackend
+    from utils.general import non_max_suppression, scale_coords, letterbox
+    from utils.torch_utils import select_device
+    
+    # Device configuration
+    DEVICE = select_device('cpu')  # Railway biasanya tidak support GPU
+    logger.info(f"Memuat model dari {MODEL_PATH} pada device {DEVICE}...")
+    
+    model = DetectMultiBackend(MODEL_PATH, device=DEVICE, dnn=False)
+    model.eval()
+    
+    stride = model.stride
     names = model.names
-    logger.info(f"✅ Loaded model with {len(model.names)} classes: {model.names}")
+    conf_thres = 0.5  # Threshold confidence lebih tinggi
+    iou_thres = 0.45
+    max_det = 100
+    
+    logger.info(f"✅ Model berhasil dimuat. Kelas: {names}")
 except Exception as e:
-    logger.error(f"Failed to load model: {str(e)}")
+    logger.error(f"Gagal memuat model: {str(e)}")
     sys.exit(1)
 
-# ——————————————————————————————
-# Memory-optimized detection
-# ——————————————————————————————
 def detect_objects(image_url):
-    """Memory-optimized object detection from URL"""
     try:
-        with requests.get(image_url, stream=True, timeout=10) as r:
-            r.raise_for_status()
-            image_array = np.asarray(bytearray(r.content), dtype=np.uint8)
-            frame = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+        # Download gambar
+        logger.info(f"Mengunduh gambar dari {image_url}")
+        response = requests.get(image_url, timeout=15)
+        response.raise_for_status()
+        
+        # Decode gambar
+        img_array = np.frombuffer(response.content, dtype=np.uint8)
+        img0 = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+        if img0 is None:
+            logger.error("Gagal mendecode gambar")
+            return {"error": "Invalid image"}, 400
 
-        if frame is None:
-            logger.error("Failed to decode image")
-            return {"error": "Failed to decode image"}, 400
+        # Preprocessing
+        img = letterbox(img0, 640, stride=stride, auto=True)[0]
+        img = img.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
+        img = np.ascontiguousarray(img)
+        img = torch.from_numpy(img).to(DEVICE).float() / 255.0
+        if len(img.shape) == 3:
+            img = img[None]  # expand for batch dim
 
-        h, w = frame.shape[:2]
-        max_dim = 640
-        if h > max_dim or w > max_dim:
-            scale = max_dim / max(h, w)
-            new_w, new_h = int(w * scale), int(h * scale)
-            frame = cv2.resize(frame, (new_w, new_h))
-            logger.info(f"Resized image from {w}x{h} to {new_w}x{new_h}")
-
-        try:
-            lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
-            l, a, b = cv2.split(lab)
-            clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
-            cl = clahe.apply(l)
-            lab = cv2.merge((cl, a, b))
-            frame = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
-        except Exception as e:
-            logger.warning(f"Contrast enhancement failed: {str(e)}")
-
-        # Run inference dengan handling tipe precision
+        # Inference
         with torch.no_grad():
-            if DEVICE == 'cuda':
-                frame_tensor = torch.from_numpy(frame).to(DEVICE).half()
-            else:
-                frame_tensor = torch.from_numpy(frame).to(DEVICE).float()
+            pred = model(img)
+            pred = non_max_suppression(pred, conf_thres, iou_thres, max_det=max_det)
 
-            results = model(frame)
+        # Postprocessing
+        detections = []
+        for i, det in enumerate(pred):
+            if len(det):
+                det[:, :4] = scale_coords(img.shape[2:], det[:, :4], img0.shape).round()
+                for *xyxy, conf, cls in reversed(det):
+                    label = names[int(cls)]
+                    detections.append({
+                        "label": label,
+                        "confidence": float(conf),
+                        "bbox": [int(x) for x in xyxy]
+                    })
 
-        dets = results.xyxy[0].cpu().numpy()
-        logger.info(f"Found {len(dets)} raw detections")
-
-        predictions = []
-        for x1, y1, x2, y2, conf, cls in dets:
-            if conf < model.conf:
-                continue
-            label = names[int(cls)]
-            predictions.append({
-                "label": label,
-                "confidence": float(conf),
-                "bbox": [int(x1), int(y1), int(x2), int(y2)]
-            })
-
-        return {
-            "success": True,
-            "predictions": predictions,
-            "count": len(predictions)
-        }
+        # Ambil deteksi dengan confidence tertinggi
+        if detections:
+            best_detection = max(detections, key=lambda x: x['confidence'])
+            return {
+                "success": True,
+                "predictions": [best_detection],
+                "count": 1
+            }
+        return {"success": True, "predictions": [], "count": 0}
 
     except Exception as e:
-        logger.error(f"Detection error: {str(e)}")
+        logger.error(f"Error deteksi: {str(e)}", exc_info=True)
         return {"error": str(e)}, 500
 
-# ——————————————————————————————
 # Routes
-# ——————————————————————————————
-@app.route('/', methods=['GET'])
+@app.route('/predict', methods=['POST'])
+def predict():
+    start_time = time.time()
+    try:
+        data = request.get_json()
+        if not data or 'url' not in data:
+            return jsonify({"error": "Parameter 'url' diperlukan"}), 400
+        
+        result = detect_objects(data['url'])
+        result['processing_time'] = f"{time.time() - start_time:.2f}s"
+        return jsonify(result)
+    
+    except Exception as e:
+        logger.error(f"Error request: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/')
 def home():
     return jsonify({
         "status": "running",
         "model": "YOLOv5",
-        "classes": list(model.names.values()),
-        "device": DEVICE,
-        "confidence_threshold": model.conf
+        "classes": list(names.values()),
+        "conf_threshold": conf_thres
     })
 
-@app.route('/predict', methods=['POST'])
-def predict():
-    try:
-        start_time = time.time()
-        logger.info(f"Received request: {request.method} {request.path}")
-
-        if request.is_json:
-            data = request.get_json()
-            if not data or 'url' not in data:
-                return jsonify({"error": "URL parameter required in JSON body"}), 400
-            image_url = data['url']
-        elif request.form:
-            if 'url' not in request.form:
-                return jsonify({"error": "URL parameter required in form data"}), 400
-            image_url = request.form['url']
-        else:
-            return jsonify({"error": "Please send URL parameter as JSON or form data"}), 400
-
-        logger.info(f"Processing image from URL: {image_url}")
-        result = detect_objects(image_url)
-
-        if isinstance(result, tuple) and len(result) == 2 and isinstance(result[1], int):
-            return jsonify(result[0]), result[1]
-
-        result["processing_time"] = f"{time.time() - start_time:.2f} seconds"
-        return jsonify(result)
-
-    except Exception as e:
-        logger.error(f"Error processing request: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/test', methods=['GET'])
-def test():
-    return jsonify({"status": "ok", "message": "YOLOv5 API is running"})
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
-    os.environ["WORKER_TIMEOUT"] = os.environ.get("WORKER_TIMEOUT", "300")
-    debug_mode = os.environ.get("DEBUG", "False").lower() == "true"
-    logger.info(f"Starting Flask app on port {port}, debug={debug_mode}")
-    app.run(host="0.0.0.0", port=port, debug=debug_mode)
+    app.run(host='0.0.0.0', port=port)

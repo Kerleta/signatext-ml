@@ -26,7 +26,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Path model
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 MODEL_PATH = os.path.join(ROOT_DIR, "model", "bisindo_best.pt")  # Pastikan struktur folder benar
 
 # Validasi model

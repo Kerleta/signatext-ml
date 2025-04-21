@@ -37,7 +37,8 @@ if not os.path.isfile(MODEL_PATH):
 # Load model
 try:
     from models.common import DetectMultiBackend
-    from utils.general import non_max_suppression, scale_coords, letterbox
+    from utils.general import non_max_suppression
+    from utils.augmentations import letterbox
     from utils.torch_utils import select_device
     
     # Device configuration
